@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard — Prank Control</title>
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --panel: #161616;
+    --border: #2a2a2a;
+    --accent: #ff3b3b;
+    --accent2: #ff8c00;
+    --green: #00e676;
+    --text: #e8e8e8;
+    --muted: #666;
+    --input-bg: #1e1e1e;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Courier New', monospace;
+    min-height: 100vh;
+  }
+
+  /* ── Login ── */
+  #loginScreen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(ellipse at center, #1a0000 0%, #0d0d0d 70%);
+  }
+  .login-box {
+    background: var(--panel);
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    padding: 48px 40px;
+    width: min(400px, 90vw);
+    box-shadow: 0 0 60px rgba(255,59,59,0.15);
+    text-align: center;
+  }
+  .login-box .logo { font-size: 3rem; margin-bottom: 8px; }
+  .login-box h1 {
+    font-size: 1.4rem;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .login-box .sub { color: var(--muted); font-size: 0.75rem; margin-bottom: 32px; }
+  .login-box input {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.95rem;
+    margin-bottom: 12px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .login-box input:focus { border-color: var(--accent); }
+  .login-box .btn-login {
+    width: 100%;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 13px;
+    font-size: 1rem;
+    font-family: inherit;
+    font-weight: bold;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    text-transform: uppercase;
+  }
+  .login-box .btn-login:hover { opacity: 0.85; transform: translateY(-1px); }
+  .login-box .err { color: var(--accent); font-size: 0.8rem; margin-top: 10px; min-height: 20px; }
+
+  /* ── Dashboard ── */
+  #dashboard { display: none; }
+
+  header {
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  header .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1rem;
+    font-weight: bold;
+    color: var(--accent);
+    letter-spacing: 2px;
+  }
+  header .brand span { color: var(--text); }
+  header .actions { display: flex; align-items: center; gap: 16px; }
+  .badge {
+    background: #1e1e1e;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 0.75rem;
+    color: var(--green);
+  }
+  .btn-logout {
+    background: none;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-family: inherit;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-logout:hover { background: rgba(255,59,59,0.1); }
+
+  .container { padding: 32px; max-width: 1200px; margin: 0 auto; }
+
+  /* ── Stats ── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .stat-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .stat-card.red::before { background: var(--accent); }
+  .stat-card.orange::before { background: var(--accent2); }
+  .stat-card.green::before { background: var(--green); }
+  .stat-card.blue::before { background: #4fc3f7; }
+  .stat-card .label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
+  .stat-card .value { font-size: 2.2rem; font-weight: bold; }
+  .stat-card.red .value { color: var(--accent); }
+  .stat-card.orange .value { color: var(--accent2); }
+  .stat-card.green .value { color: var(--green); }
+  .stat-card.blue .value { color: #4fc3f7; }
+  .stat-card .icon { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); font-size: 2.5rem; opacity: 0.15; }
+
+  /* ── Grid Layout ── */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+  @media(max-width: 768px) { .main-grid { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+  }
+  .panel h2 {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: var(--muted);
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+  }
+
+  /* ── Sound Settings ── */
+  .form-row { margin-bottom: 18px; }
+  .form-row label { display: block; font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; }
+  .form-row select, .form-row input[type="text"], .form-row input[type="url"], .form-row textarea {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-row select:focus,
+  .form-row input:focus,
+  .form-row textarea:focus { border-color: var(--accent); }
+
+  /* Volume Slider */
+  .vol-wrap { display: flex; align-items: center; gap: 12px; }
+  .vol-wrap input[type="range"] {
+    -webkit-appearance: none;
+    flex: 1;
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(to right, var(--accent) 0%, var(--accent) var(--val, 100%), #2a2a2a var(--val, 100%));
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+  .vol-wrap input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(255,59,59,0.5);
+  }
+  .vol-display {
+    min-width: 50px;
+    text-align: right;
+    color: var(--accent);
+    font-weight: bold;
+    font-size: 1rem;
+  }
+
+  .btn-save {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 7px;
+    padding: 11px 24px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: bold;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: opacity 0.2s;
+  }
+  .btn-save:hover { opacity: 0.85; }
+  .btn-save.saved { background: var(--green); color: #000; }
+
+  .btn-test {
+    background: none;
+    border: 1px solid var(--accent2);
+    color: var(--accent2);
+    border-radius: 7px;
+    padding: 11px 20px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-left: 8px;
+  }
+  .btn-test:hover { background: rgba(255,140,0,0.1); }
+
+  /* ── Visitor Table ── */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  th {
+    text-align: left;
+    padding: 8px 12px;
+    color: var(--muted);
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #1a1a1a;
+    vertical-align: top;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  tr:hover td { background: #1a1a1a; }
+  .id-badge {
+    background: rgba(255,59,59,0.15);
+    color: var(--accent);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 0.7rem;
+    font-weight: bold;
+  }
+  .device-badge {
+    background: rgba(79,195,247,0.1);
+    color: #4fc3f7;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 0.7rem;
+  }
+  .touch-badge {
+    background: rgba(0,230,118,0.1);
+    color: var(--green);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 0.65rem;
+  }
+  .empty { text-align: center; color: var(--muted); padding: 40px; font-size: 0.85rem; }
+
+  /* ── Clear Btn ── */
+  .btn-clear {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-family: inherit;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-clear:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: var(--green);
+    color: #000;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 0.85rem;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s;
+    z-index: 999;
+    pointer-events: none;
+  }
+  #toast.show { opacity: 1; transform: translateY(0); }
+
+  /* ── Credentials Panel ── */
+  .cred-info {
+    background: #1a1a0a;
+    border: 1px solid #3a3a00;
+    border-radius: 8px;
+    padding: 16px;
+    font-size: 0.8rem;
+    color: #aaa;
+    line-height: 1.8;
+  }
+  .cred-info code {
+    background: #252500;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--accent2);
+    font-family: inherit;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+  }
+  .section-header h2 {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: var(--muted);
+    margin: 0;
+    border: none;
+    padding: 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════ LOGIN ══════════ -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="logo">💀</div>
+    <h1>PRANK <span style="color:var(--text)">ADMIN</span></h1>
+    <div class="sub">Restricted Access — Authorized Personnel Only</div>
+    <input type="text" id="inputUser" placeholder="Username" autocomplete="off" />
+    <input type="password" id="inputPass" placeholder="Password" />
+    <button class="btn-login" onclick="doLogin()">LOGIN</button>
+    <div class="err" id="loginErr"></div>
+    <div style="margin-top:20px;font-size:0.7rem;color:var(--muted)">
+      Default: <code style="color:var(--accent2)">admin</code> / <code style="color:var(--accent2)">prank123</code>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ DASHBOARD ══════════ -->
+<div id="dashboard">
+  <header>
+    <div class="brand">💀 PRANK <span>CONTROL</span></div>
+    <div class="actions">
+      <div class="badge">● LIVE</div>
+      <span id="adminLabel" style="font-size:0.8rem;color:var(--muted)"></span>
+      <button class="btn-logout" onclick="doLogout()">LOGOUT</button>
+    </div>
+    <a href="index.html" target="_blank" style="color:#4fc3f7;font-size:0.8rem;">
+  🔗 Buka Halaman Prank
+    </a>
+  </header>
+
+  <div class="container">
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card red">
+        <div class="label">Total Korban</div>
+        <div class="value" id="statTotal">0</div>
+        <div class="icon">😈</div>
+      </div>
+      <div class="stat-card orange">
+        <div class="label">Hari Ini</div>
+        <div class="value" id="statToday">0</div>
+        <div class="icon">📅</div>
+      </div>
+      <div class="stat-card green">
+        <div class="label">Mobile</div>
+        <div class="value" id="statMobile">0</div>
+        <div class="icon">📱</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="label">Desktop</div>
+        <div class="value" id="statDesktop">0</div>
+        <div class="icon">💻</div>
+      </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="main-grid">
+
+      <!-- Sound Settings -->
+      <div class="panel">
+        <h2>⚙️ Pengaturan Suara</h2>
+
+        <div class="form-row">
+          <label>Jenis Suara</label>
+          <select id="cfgSound">
+            <option value="scream">😱 Teriakan Keras (Synthesized)</option>
+            <option value="airhorn">📯 Air Horn</option>
+            <option value="jumpscare">👻 Jump Scare Sound</option>
+            <option value="custom">🔗 Custom URL (MP3/WAV)</option>
+          </select>
+        </div>
+
+        <div class="form-row" id="customUrlRow" style="display:none">
+          <label>URL Suara Custom</label>
+          <input type="url" id="cfgCustomUrl" placeholder="https://example.com/sound.mp3" />
+        </div>
+
+        <div class="form-row">
+          <label>Volume Suara</label>
+          <div class="vol-wrap">
+            <input type="range" id="cfgVolume" min="0" max="100" value="100"
+              oninput="updateVolDisplay(this)"
+              style="--val: 100%"
+            />
+            <div class="vol-display" id="volDisplay">100%</div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label>Teks Utama Halaman Prank</label>
+          <input type="text" id="cfgText" value="😱 KENA PRANK!" />
+        </div>
+
+        <div class="form-row">
+          <label>Teks Bawah</label>
+          <input type="text" id="cfgSub" value="Hahaha! Gotcha! 🤣🤣🤣" />
+        </div>
+
+        <div style="display:flex;align-items:center;gap:0">
+          <button class="btn-save" id="btnSave" onclick="saveConfig()">💾 SIMPAN</button>
+          <button class="btn-test" onclick="previewSound()">▶ TEST SUARA</button>
+        </div>
+      </div>
+
+      <!-- Credentials Info -->
+      <div class="panel">
+        <h2>🔐 Kredensial Admin</h2>
+        <div class="cred-info">
+          <div>Username: <code id="showUser">—</code></div>
+          <div>Password: <code id="showPass">—</code></div>
+          <br>
+          <div style="color:#666;font-size:0.75rem;">
+            ⚠️ Untuk mengubah kredensial, edit konstanta <code>ADMINS</code> di dalam file <code>admin.html</code> pada bagian kode JavaScript.<br><br>
+            Akses hanya untuk yang memiliki username & password yang terdaftar.
+          </div>
+        </div>
+
+        <div style="margin-top:20px">
+          <h2 style="font-size:0.75rem;text-transform:uppercase;letter-spacing:3px;color:var(--muted);margin-bottom:12px">📋 Info Teknis Browser</h2>
+          <div class="cred-info" style="font-size:0.75rem;line-height:2">
+            <div>Volume HP: <strong style="color:#ff8c00">Tidak bisa dikontrol</strong></div>
+            <div>Nomor Seri: <strong style="color:#ff8c00">Tidak tersedia di browser</strong></div>
+            <div>IMEI: <strong style="color:#ff8c00">Diblokir oleh OS</strong></div>
+            <div>Suara Auto-Play: <strong style="color:var(--green)">✓ Setelah user klik</strong></div>
+            <div>Fullscreen: <strong style="color:var(--green)">✓ Auto setelah klik</strong></div>
+            <div>Getar: <strong style="color:var(--green)">✓ Vibration API</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Visitor Log -->
+    <div class="panel" style="margin-bottom:20px">
+      <div class="section-header">
+        <h2>👥 Log Pengunjung / Korban</h2>
+        <button class="btn-clear" onclick="clearVisits()">🗑 Hapus Semua</button>
+      </div>
+      <div class="table-wrap">
+        <table id="visitorTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Waktu</th>
+              <th>Perangkat</th>
+              <th>Sistem</th>
+              <th>Layar</th>
+              <th>Bahasa</th>
+              <th>Timezone</th>
+              <th>Sumber</th>
+              <th>RAM</th>
+              <th>CPU Core</th>
+            </tr>
+          </thead>
+          <tbody id="visitorBody">
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /container -->
+</div><!-- /dashboard -->
+
+<div id="toast">✓ Pengaturan disimpan!</div>
+
+<script>
+// ══════════════════════════════════════════════════
+// ADMIN CREDENTIALS — Edit di sini untuk menambah/ubah admin
+// ══════════════════════════════════════════════════
+const ADMINS = [
+  { username: 'admin',      password: 'prank123',  label: 'Administrator' },
+  { username: 'superadmin', password: 'super@2024', label: 'Super Admin' },
+  // Tambah admin baru di sini:
+  // { username: 'namauser', password: 'passwordku', label: 'Label' },
+];
+
+const CONFIG_KEY = 'prank_config';
+const VISIT_KEY  = 'prank_visits';
+
+let currentAdmin = null;
+
+// ── Login ─────────────────────────────────────────
+function doLogin() {
+  const u = document.getElementById('inputUser').value.trim();
+  const p = document.getElementById('inputPass').value;
+  const found = ADMINS.find(a => a.username === u && a.password === p);
+  if (!found) {
+    document.getElementById('loginErr').textContent = '✗ Username atau password salah.';
+    return;
+  }
+  currentAdmin = found;
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  document.getElementById('adminLabel').textContent = found.label;
+  document.getElementById('showUser').textContent = found.username;
+  document.getElementById('showPass').textContent = '••••••••';
+  loadConfig();
+  renderVisitors();
+  setInterval(renderVisitors, 5000); // auto-refresh every 5s
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+function doLogout() {
+  currentAdmin = null;
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('inputPass').value = '';
+  document.getElementById('loginErr').textContent = '';
+}
+
+// ── Config ────────────────────────────────────────
+function loadConfig() {
+  try {
+    const raw = localStorage.getItem(CONFIG_KEY);
+    if (!raw) return;
+    const cfg = JSON.parse(raw);
+    document.getElementById('cfgSound').value = cfg.soundType || 'scream';
+    document.getElementById('cfgCustomUrl').value = cfg.customSoundUrl || '';
+    const vol = Math.round((parseFloat(cfg.volume) || 1) * 100);
+    const slider = document.getElementById('cfgVolume');
+    slider.value = vol;
+    updateVolDisplay(slider);
+    document.getElementById('cfgText').value = cfg.prankText || '😱 KENA PRANK!';
+    document.getElementById('cfgSub').value  = cfg.prankSub  || 'Hahaha! Gotcha! 🤣🤣🤣';
+    toggleCustomUrl();
+  } catch(e) {}
+}
+
+function saveConfig() {
+  const soundType = document.getElementById('cfgSound').value;
+  const cfg = {
+    soundType,
+    customSoundUrl: document.getElementById('cfgCustomUrl').value.trim(),
+    volume: parseInt(document.getElementById('cfgVolume').value) / 100,
+    prankText: document.getElementById('cfgText').value || '😱 KENA PRANK!',
+    prankSub:  document.getElementById('cfgSub').value  || 'Hahaha! Gotcha! 🤣',
+  };
+  localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg));
+  const btn = document.getElementById('btnSave');
+  btn.textContent = '✓ TERSIMPAN!';
+  btn.classList.add('saved');
+  showToast('✓ Pengaturan berhasil disimpan!');
+  setTimeout(() => {
+    btn.textContent = '💾 SIMPAN';
+    btn.classList.remove('saved');
+  }, 2000);
+}
+
+function toggleCustomUrl() {
+  const v = document.getElementById('cfgSound').value;
+  document.getElementById('customUrlRow').style.display = v === 'custom' ? 'block' : 'none';
+}
+document.getElementById('cfgSound').addEventListener('change', toggleCustomUrl);
+
+function updateVolDisplay(el) {
+  const v = el.value;
+  document.getElementById('volDisplay').textContent = v + '%';
+  el.style.setProperty('--val', v + '%');
+}
+
+// ── Sound Preview ─────────────────────────────────
+async function previewSound() {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const vol = parseInt(document.getElementById('cfgVolume').value) / 100;
+  const type = document.getElementById('cfgSound').value;
+  const customUrl = document.getElementById('cfgCustomUrl').value.trim();
+
+  if (type === 'custom' && customUrl) {
+    try {
+      const res = await fetch(customUrl);
+      const buf = await res.arrayBuffer();
+      const decoded = await ctx.decodeAudioData(buf);
+      const src = ctx.createBufferSource();
+      const gain = ctx.createGain();
+      gain.gain.value = vol;
+      src.buffer = decoded;
+      src.connect(gain); gain.connect(ctx.destination);
+      src.start();
+    } catch(e) { alert('Gagal memuat URL suara custom: ' + e.message); }
+    return;
+  }
+
+  const dur = 1.5;
+  if (type === 'airhorn') {
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.value = 880;
+    g.gain.setValueAtTime(vol, ctx.currentTime);
+    g.gain.linearRampToValueAtTime(0, ctx.currentTime + dur);
+    osc.connect(g); g.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + dur);
+  } else if (type === 'jumpscare') {
+    [160, 640, 2560].forEach(freq => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.frequency.value = freq;
+      osc.type = 'sawtooth';
+      g.gain.setValueAtTime(vol / 2, ctx.currentTime);
+      g.gain.linearRampToValueAtTime(0, ctx.currentTime + dur);
+      osc.connect(g); g.connect(ctx.destination);
+      osc.start(); osc.stop(ctx.currentTime + dur);
+    });
+  } else {
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(200, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.3);
+    osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + dur);
+    g.gain.setValueAtTime(vol, ctx.currentTime);
+    g.gain.linearRampToValueAtTime(0, ctx.currentTime + dur);
+    osc.connect(g); g.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + dur);
+  }
+}
+
+// ── Visitor Table ─────────────────────────────────
+function renderVisitors() {
+  const visits = JSON.parse(localStorage.getItem(VISIT_KEY) || '[]');
+  const today = new Date().toDateString();
+
+  // Stats
+  let todayCount = 0, mobileCount = 0, desktopCount = 0;
+  visits.forEach(v => {
+    if (new Date(v.time).toDateString() === today) todayCount++;
+    if (v.touch) mobileCount++; else desktopCount++;
+  });
+  document.getElementById('statTotal').textContent   = visits.length;
+  document.getElementById('statToday').textContent   = todayCount;
+  document.getElementById('statMobile').textContent  = mobileCount;
+  document.getElementById('statDesktop').textContent = desktopCount;
+
+  const tbody = document.getElementById('visitorBody');
+  if (visits.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="10" class="empty">Belum ada pengunjung 😴</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = [...visits].reverse().map(v => {
+    const dt = new Date(v.time);
+    const timeStr = dt.toLocaleDateString('id-ID') + ' ' + dt.toLocaleTimeString('id-ID');
+    const ua = v.ua || '';
+    let device = '💻 Desktop';
+    let osInfo = 'Unknown OS';
+
+    if (/android/i.test(ua)) { device = '📱 Android'; osInfo = (ua.match(/Android\s[\d.]+/) || ['Android'])[0]; }
+    else if (/iPhone|iPad/i.test(ua)) { device = '🍎 iOS'; osInfo = (ua.match(/OS\s[\d_]+/) || ['iOS'])[0].replace(/_/g,'.'); }
+    else if (/Windows/i.test(ua)) { osInfo = (ua.match(/Windows NT [\d.]+/) || ['Windows'])[0]; }
+    else if (/Mac OS/i.test(ua)) { osInfo = 'macOS'; }
+    else if (/Linux/i.test(ua)) { osInfo = 'Linux'; }
+
+    return `
+      <tr>
+        <td><span class="id-badge">${v.id || '—'}</span></td>
+        <td style="white-space:nowrap;font-size:0.75rem;color:var(--muted)">${timeStr}</td>
+        <td><span class="device-badge">${device}</span></td>
+        <td style="font-size:0.75rem;color:#aaa">${osInfo}</td>
+        <td style="font-size:0.75rem;color:#aaa">${v.screen || '—'}</td>
+        <td style="font-size:0.75rem">${v.lang || '—'}</td>
+        <td style="font-size:0.75rem;color:#aaa;max-width:120px;overflow:hidden;text-overflow:ellipsis">${v.tz || '—'}</td>
+        <td style="font-size:0.75rem;color:#aaa;max-width:100px;overflow:hidden;text-overflow:ellipsis">${v.referrer || 'direct'}</td>
+        <td style="font-size:0.75rem">${v.memory ? v.memory + ' GB' : '—'}</td>
+        <td style="font-size:0.75rem">${v.cores || '—'}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function clearVisits() {
+  if (confirm('Hapus semua data pengunjung?')) {
+    localStorage.removeItem(VISIT_KEY);
+    renderVisitors();
+    showToast('🗑 Data pengunjung dihapus!');
+  }
+}
+
+// ── Toast ─────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>

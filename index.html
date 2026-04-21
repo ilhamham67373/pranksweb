@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GIVE AWAY FROM INDIA🎉</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a0a;
+    font-family: 'Courier New', monospace;
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: none;
+  }
+
+  /* DECOY screen shown first */
+  #decoy {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    gap: 24px;
+  }
+  #decoy h1 {
+    font-family: Georgia, serif;
+    font-size: clamp(1.5rem, 5vw, 3rem);
+    color: #fff;
+    text-align: center;
+    animation: pulse 1s infinite;
+  }
+  #decoy p { color: #aaa; font-size: 1rem; text-align: center; padding: 0 20px; }
+  #decoy .btn {
+    background: linear-gradient(90deg, #e63946, #f4a261);
+    color: white;
+    border: none;
+    padding: 16px 40px;
+    font-size: 1.2rem;
+    border-radius: 50px;
+    cursor: pointer;
+    font-weight: bold;
+    box-shadow: 0 0 30px rgba(230,57,70,0.5);
+    animation: bounce 0.8s infinite alternate;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.7} }
+  @keyframes bounce { from{transform:translateY(0)} to{transform:translateY(-8px)} }
+
+  /* PRANK screen */
+  #prank {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    animation: bgFlash 0.15s infinite;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 20px;
+  }
+  @keyframes bgFlash {
+    0%   { background: #ff0000; }
+    25%  { background: #ffff00; }
+    50%  { background: #00ff00; }
+    75%  { background: #ff00ff; }
+    100% { background: #00ffff; }
+  }
+  #prank h1 {
+    font-size: clamp(3rem, 15vw, 10rem);
+    font-weight: 900;
+    color: #000;
+    text-align: center;
+    animation: shake 0.1s infinite;
+    text-shadow: 5px 5px 0 #fff, -5px -5px 0 #fff;
+    line-height: 1;
+  }
+  #prank p {
+    font-size: clamp(1rem, 4vw, 2rem);
+    color: #000;
+    font-weight: bold;
+    text-align: center;
+    animation: shake 0.08s infinite;
+  }
+  @keyframes shake {
+    0%   { transform: translate(0,0) rotate(0deg); }
+    20%  { transform: translate(-4px,3px) rotate(-1deg); }
+    40%  { transform: translate(4px,-3px) rotate(1deg); }
+    60%  { transform: translate(-3px,4px) rotate(0deg); }
+    80%  { transform: translate(3px,-3px) rotate(-1deg); }
+    100% { transform: translate(0,0) rotate(0deg); }
+  }
+
+  /* emoji rain */
+  .emoji {
+    position: fixed;
+    font-size: 2rem;
+    animation: fall linear infinite;
+    pointer-events: none;
+    z-index: 200;
+  }
+  @keyframes fall {
+    0%  { transform: translateY(-50px) rotate(0deg); opacity:1; }
+    100%{ transform: translateY(110vh) rotate(360deg); opacity:0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- DECOY PAGE -->
+<div id="decoy">
+  <div style="font-size:5rem;">🎁</div>
+  <h1>SELAMAT! Anda Terpilih!<br>Menangkan iPhone 16 Pro!</h1>
+  <p>Anda adalah pengunjung ke-1.000.000! Klaim hadiah Anda sekarang sebelum kedaluwarsa!</p>
+  <div style="color:#f4a261;font-size:0.9rem;">⏳ Sisa waktu: <span id="timer">05:00</span></div>
+  <button class="btn" onclick="triggerPrank()">🎉 KLAIM HADIAH SEKARANG!</button>
+</div>
+
+<!-- PRANK PAGE -->
+<div id="prank">
+  <h1 id="prankText">😱 KENA PRANK!</h1>
+  <p id="prankSub">Hahaha! Gotcha! 🤣🤣🤣</p>
+</div>
+
+<script>
+// ─── Config dari Admin (disimpan di localStorage) ───────────────────────────
+const CONFIG_KEY = 'prank_config';
+const VISIT_KEY  = 'prank_visits';
+
+function getConfig() {
+  try {
+    const raw = localStorage.getItem(CONFIG_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return {
+    soundType: 'scream',    // scream | airhorn | jumpscare | custom
+    customSoundUrl: '',
+    volume: 1.0,
+    prankText: '😱 KENA PRANK!',
+    prankSub: 'Hahaha! Gotcha! 🤣🤣🤣'
+  };
+}
+
+// ─── Visitor Tracking ────────────────────────────────────────────────────────
+function recordVisit() {
+  const visits = JSON.parse(localStorage.getItem(VISIT_KEY) || '[]');
+  const info = {
+    time: new Date().toISOString(),
+    ua: navigator.userAgent,
+    lang: navigator.language,
+    screen: `${screen.width}x${screen.height}`,
+    platform: navigator.platform,
+    vendor: navigator.vendor,
+    cores: navigator.hardwareConcurrency || '?',
+    memory: navigator.deviceMemory || '?',
+    online: navigator.onLine,
+    tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    referrer: document.referrer || 'direct',
+    touch: navigator.maxTouchPoints > 0,
+    id: Math.random().toString(36).substr(2,9).toUpperCase()
+  };
+  visits.push(info);
+  localStorage.setItem(VISIT_KEY, JSON.stringify(visits));
+}
+
+recordVisit();
+
+// ─── Countdown Timer ─────────────────────────────────────────────────────────
+let secs = 300;
+const timerEl = document.getElementById('timer');
+const interval = setInterval(() => {
+  secs--;
+  if (secs <= 0) { clearInterval(interval); timerEl.textContent = '00:00'; return; }
+  const m = String(Math.floor(secs/60)).padStart(2,'0');
+  const s = String(secs%60).padStart(2,'0');
+  timerEl.textContent = `${m}:${s}`;
+}, 1000);
+
+// ─── Sound Generator ─────────────────────────────────────────────────────────
+function createScreamSound(ctx, vol) {
+  // Synthesized scream-like burst using oscillators
+  const duration = 3;
+  const osc1 = ctx.createOscillator();
+  const osc2 = ctx.createOscillator();
+  const osc3 = ctx.createOscillator();
+  const gain = ctx.createGain();
+  const distortion = ctx.createWaveShaper();
+
+  // Waveshaper for distortion
+  const curve = new Float32Array(256);
+  for (let i = 0; i < 256; i++) {
+    const x = (i * 2) / 256 - 1;
+    curve[i] = (Math.PI + 400) * x / (Math.PI + 400 * Math.abs(x));
+  }
+  distortion.curve = curve;
+
+  osc1.type = 'sawtooth';
+  osc2.type = 'square';
+  osc3.type = 'sawtooth';
+
+  osc1.frequency.setValueAtTime(200, ctx.currentTime);
+  osc1.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.3);
+  osc1.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + duration);
+
+  osc2.frequency.setValueAtTime(300, ctx.currentTime);
+  osc2.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.2);
+  osc2.frequency.exponentialRampToValueAtTime(250, ctx.currentTime + duration);
+
+  osc3.frequency.setValueAtTime(450, ctx.currentTime);
+  osc3.frequency.exponentialRampToValueAtTime(1800, ctx.currentTime + 0.25);
+  osc3.frequency.exponentialRampToValueAtTime(350, ctx.currentTime + duration);
+
+  gain.gain.setValueAtTime(0, ctx.currentTime);
+  gain.gain.linearRampToValueAtTime(vol, ctx.currentTime + 0.05);
+  gain.gain.setValueAtTime(vol, ctx.currentTime + duration - 0.1);
+  gain.gain.linearRampToValueAtTime(0, ctx.currentTime + duration);
+
+  osc1.connect(distortion);
+  osc2.connect(distortion);
+  osc3.connect(distortion);
+  distortion.connect(gain);
+  gain.connect(ctx.destination);
+
+  osc1.start(); osc2.start(); osc3.start();
+  osc1.stop(ctx.currentTime + duration);
+  osc2.stop(ctx.currentTime + duration);
+  osc3.stop(ctx.currentTime + duration);
+}
+
+function createAirhornSound(ctx, vol) {
+  const duration = 2.5;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(440, ctx.currentTime);
+  osc.frequency.setValueAtTime(880, ctx.currentTime + 0.05);
+  gain.gain.setValueAtTime(vol, ctx.currentTime);
+  gain.gain.linearRampToValueAtTime(0, ctx.currentTime + duration);
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(); osc.stop(ctx.currentTime + duration);
+}
+
+function createJumpscareSound(ctx, vol) {
+  // Low rumble + high shriek
+  [80, 160, 320, 640, 1280, 2560].forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.frequency.value = freq;
+    osc.type = i % 2 === 0 ? 'sawtooth' : 'square';
+    g.gain.setValueAtTime(vol / 3, ctx.currentTime);
+    g.gain.linearRampToValueAtTime(0, ctx.currentTime + 2);
+    osc.connect(g); g.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + 2);
+  });
+}
+
+async function playSound(cfg) {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const vol = Math.min(Math.max(parseFloat(cfg.volume) || 1.0, 0), 1);
+
+  if (cfg.soundType === 'custom' && cfg.customSoundUrl) {
+    try {
+      const res = await fetch(cfg.customSoundUrl);
+      const buf = await res.arrayBuffer();
+      const decoded = await ctx.decodeAudioData(buf);
+      const src = ctx.createBufferSource();
+      const gain = ctx.createGain();
+      gain.gain.value = vol;
+      src.buffer = decoded;
+      src.connect(gain); gain.connect(ctx.destination);
+      src.start();
+    } catch(e) {
+      createScreamSound(ctx, vol);
+    }
+  } else if (cfg.soundType === 'airhorn') {
+    createAirhornSound(ctx, vol);
+  } else if (cfg.soundType === 'jumpscare') {
+    createJumpscareSound(ctx, vol);
+  } else {
+    createScreamSound(ctx, vol);
+  }
+}
+
+// ─── Emoji Rain ───────────────────────────────────────────────────────────────
+function startEmojiRain() {
+  const emojis = ['😱','🤣','💀','👻','🎉','🔥','💥','⚡','🤪','😈'];
+  for (let i = 0; i < 30; i++) {
+    const el = document.createElement('div');
+    el.className = 'emoji';
+    el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    el.style.left = Math.random() * 100 + 'vw';
+    el.style.animationDuration = (1 + Math.random() * 3) + 's';
+    el.style.animationDelay = (Math.random() * 2) + 's';
+    el.style.fontSize = (1.5 + Math.random() * 3) + 'rem';
+    document.body.appendChild(el);
+  }
+}
+
+// ─── TRIGGER ─────────────────────────────────────────────────────────────────
+async function triggerPrank() {
+  const cfg = getConfig();
+
+  // Update UI text from config
+  document.getElementById('prankText').textContent = cfg.prankText || '😱 KENA PRANK!';
+  document.getElementById('prankSub').textContent  = cfg.prankSub  || 'Hahaha! Gotcha! 🤣';
+
+  // Try fullscreen
+  try { document.documentElement.requestFullscreen(); } catch(e) {}
+
+  // Play sound (LOUD)
+  await playSound(cfg);
+
+  // Show prank screen
+  document.getElementById('decoy').style.display = 'none';
+  const prankEl = document.getElementById('prank');
+  prankEl.style.display = 'flex';
+
+  // Emoji rain
+  startEmojiRain();
+
+  // Vibrate if supported
+  if (navigator.vibrate) navigator.vibrate([500,100,500,100,500,100,1000]);
+
+  // Stop flashing after 8s
+  setTimeout(() => {
+    prankEl.style.animation = 'none';
+    prankEl.style.background = '#111';
+    document.querySelectorAll('.emoji').forEach(e => e.remove());
+  }, 8000);
+}
+
+// Auto-trigger after 3s if user doesn't click (optional - some browsers block autoplay)
+// Uncomment if you want auto-trigger:
+// setTimeout(triggerPrank, 3000);
+</script>
+</body>
+</html>
